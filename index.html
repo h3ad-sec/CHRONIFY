@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHRONIFY: Forensic Timestamp Converter — 16 Formats</title>
+  <meta name="description" content="Enterprise-grade forensic timestamp converter covering 16 formats — Unix, Windows FILETIME, .NET Ticks, Chrome/WebKit, Mac Absolute, HFS+, DOS, Excel/OLE, Julian, GPS, RFC 2822 — with single, direct, bulk, and duration conversion modes for DFIR timeline analysis." />
+  <meta name="keywords" content="timestamp converter, unix timestamp converter, windows filetime converter, epoch converter, gps time converter, excel serial date converter, dfir timestamp tool, forensic timeline converter" />
+  <link rel="canonical" href="https://h3ad-sec.github.io/CHRONIFY/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="H3AD-SEC" />
+  <meta property="og:url" content="https://h3ad-sec.github.io/CHRONIFY/" />
+  <meta property="og:title" content="CHRONIFY: Forensic Timestamp Converter — 16 Formats" />
+  <meta property="og:description" content="Enterprise-grade forensic timestamp converter covering 16 formats across single, direct, bulk, and duration conversion modes for DFIR timeline analysis." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/h3ad-sec/h3ad-sec.github.io/main/logo-dark.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CHRONIFY: Forensic Timestamp Converter — 16 Formats" />
+  <meta name="twitter:description" content="Enterprise-grade forensic timestamp converter covering 16 formats across single, direct, bulk, and duration conversion modes for DFIR timeline analysis." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/h3ad-sec/h3ad-sec.github.io/main/logo-dark.png" />
+
+  <meta name="theme-color" content="#080c14" />
+  <link rel="icon" href="https://h3ad-sec.github.io/fevicon.png?v=2026" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Share+Tech+Mono&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "CHRONIFY",
+    "description": "Enterprise-grade forensic timestamp converter covering 16 formats — Unix, Windows FILETIME, .NET Ticks, Chrome/WebKit, Mac Absolute, HFS+, DOS, Excel/OLE, Julian, GPS, RFC 2822 — with single, direct, bulk, and duration conversion modes for DFIR timeline analysis.",
+    "url": "https://h3ad-sec.github.io/CHRONIFY/",
+    "applicationCategory": "SecurityApplication",
+    "operatingSystem": "Any",
+    "featureList": [
+      "16 timestamp formats: Unix seconds/ms/ns, Windows FILETIME, Windows/.NET Ticks, DOS Date/Time, Chrome/WebKit, Mac Absolute Time, HFS+, OLE Automation/Excel Serial Date, Julian Date, GPS Time, RFC 2822, ISO 8601 UTC/Local",
+      "Single view: all 16 formats sync live from any one field",
+      "Direct view: pick one source and target format for a focused conversion, single value or bulk (one per line)",
+      "Batch view: convert a pasted list against a chosen format or best-effort auto-detect, with ambiguous/unparseable rows flagged",
+      "Duration calculator between two timestamps in any supported format",
+      "Permalink, conversion history, and Markdown export for case reports"
+    ],
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "H3AD-SEC",
+      "url": "https://h3ad-sec.github.io"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {"@type":"ListItem","position":1,"name":"H3AD-SEC","item":"https://h3ad-sec.github.io/"},
+      {"@type":"ListItem","position":2,"name":"H3AD-DF","item":"https://h3ad-sec.github.io/H3AD-DF/"},
+      {"@type":"ListItem","position":3,"name":"CHRONIFY","item":"https://h3ad-sec.github.io/CHRONIFY/"}
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type":"Question","name":"What is a Windows FILETIME timestamp?","acceptedAnswer":{"@type":"Answer","text":"A Windows FILETIME is a 64-bit value counting 100-nanosecond intervals since 1601-01-01 00:00:00 UTC. It appears in NTFS $STANDARD_INFORMATION timestamps, registry key LastWrite times, EVTX event records, and Active Directory/LDAP timestamp attributes."}},
+      {"@type":"Question","name":"How do I convert a Unix timestamp to a readable date?","acceptedAnswer":{"@type":"Answer","text":"Unix time counts seconds (or milliseconds) since 1970-01-01 00:00:00 UTC. Enter the value in the Unix Epoch field and every other format, including ISO 8601 UTC and local time, updates instantly."}},
+      {"@type":"Question","name":"What is the difference between Windows FILETIME and .NET Ticks?","acceptedAnswer":{"@type":"Answer","text":"Both count 100-nanosecond intervals, but from different epochs: FILETIME starts at 1601-01-01, while .NET's DateTime.Ticks starts at 0001-01-01. The same instant produces very different-looking numbers in each, which is a common source of forensic analysis errors."}},
+      {"@type":"Question","name":"How is a Chrome or Edge history timestamp converted?","acceptedAnswer":{"@type":"Answer","text":"Chromium-based browsers (Chrome, Edge, Brave) store visit timestamps as microseconds since 1601-01-01 00:00:00 UTC in the History and Cookies SQLite databases. This is often called a WebKit timestamp."}},
+      {"@type":"Question","name":"What is an Excel serial date and how does it relate to OLE Automation Date?","acceptedAnswer":{"@type":"Answer","text":"An Excel serial date and an OLE Automation Date are the same representation for modern dates: days (with a fractional part for time of day) since 1899-12-30. This is the raw number behind any date-formatted Excel cell."}},
+      {"@type":"Question","name":"What is GPS time and why does it differ from UTC?","acceptedAnswer":{"@type":"Answer","text":"GPS time counts seconds since 1980-01-06 00:00:00 UTC and does not apply leap seconds the way UTC does, so it currently runs 18 seconds ahead of UTC (as of the last leap second on 2016-12-31). This matters when correlating GNSS-device or vehicle telemetry timestamps with other evidence."}},
+      {"@type":"Question","name":"Can I convert a list of timestamps at once?","acceptedAnswer":{"@type":"Answer","text":"Yes. The Batch view accepts a pasted list (one value per line), converts every line against a chosen format or a best-effort auto-detect, and flags rows that are ambiguous or unparseable. The Direct view also has a bulk mode for converting many values between one specific source and target format."}},
+      {"@type":"Question","name":"How accurate are the timestamp conversions?","acceptedAnswer":{"@type":"Answer","text":"Every epoch offset used in this tool (FILETIME, WebKit, Mac Absolute, HFS+, OLE Automation, .NET Ticks, GPS, Julian Date) was independently verified against calendar arithmetic and well-established public constants before release, not just assumed correct."}}
+    ]
+  }
+  </script>
+<style>
+:root{
+  --bg:#080c14;--panel:#0d1117;--panel-alt:#111827;--surface:#18253a;
+  --text:#e6edf3;--text-dim:#96b0cc;--muted:#8b949e;--muted-dim:#3a5470;
+  --accent:#00d4ff;--primary:#00d4ff;--accent2:#58a6ff;
+  --border:#1e2d3d;--border-dim:#121e30;
+  --status-live:#00d4ff;--status-partial:#f59e0b;--status-soon:#2d3748;
+  --nav-h:48px;
+  --mono:'Share Tech Mono',monospace;--ui:'IBM Plex Sans',sans-serif;--fs-xs:11px;
+}
+body.light{
+  --bg:#eef2f8;--panel:#ffffff;--panel-alt:#e4ecf6;--surface:#ccd8ec;
+  --text:#060e1c;--text-dim:#142540;--muted:#2c4a6a;--muted-dim:#5c7a9a;
+  --accent:#0284c7;--primary:#0284c7;--accent2:#0ea5e9;
+  --border:#a0b8d4;--border-dim:#c8d8ec;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;font-size:15px;line-height:1.6;
+  display:flex;flex-direction:column;min-height:100dvh;transition:background .25s,color .25s;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 40%,rgba(0,212,255,0.04) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 80%,rgba(88,166,255,0.03) 0%,transparent 60%);}
+a{color:var(--accent);text-decoration:none;}
+a:hover{opacity:.8;}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:3px;}
+ul{list-style:none;}
+
+/* ── NAV ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--panel);border-bottom:1px solid var(--border);
+  height:var(--nav-h);display:flex;align-items:center;padding:0 1.25rem;transition:background .3s,border-color .3s;}
+.nav-brand{display:flex;align-items:center;flex-shrink:0;margin-right:1rem;}
+.nav-brand img{height:22px;width:auto;vertical-align:middle;}
+.xv-nav-pill{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin-left:0;padding-left:10px;
+  border-left:1px solid var(--border);white-space:nowrap;flex-shrink:0;text-decoration:none;}
+.xv-pill-name{font-family:'Exo 2',sans-serif;font-weight:700;font-size:13px;letter-spacing:3px;line-height:1;}
+.xv-pill-accent{color:var(--accent);}
+.xv-pill-text{color:var(--text);}
+.xv-pill-tagline{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1.5px;}
+.nav-links{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;}
+.nav-links a{font-family:'Exo 2',sans-serif;font-weight:500;font-size:var(--fs-xs);color:var(--muted);text-decoration:none;padding:5px 8px;
+  border-radius:4px;border:1px solid transparent;white-space:nowrap;transition:all .15s;}
+.nav-links a:hover{color:var(--accent);border-color:var(--border);background:rgba(0,212,255,.04);}
+.nav-links a.nav-current{color:var(--accent);border:1px solid var(--border);}
+.nav-divider{width:1px;height:18px;background:var(--border);margin:0 4px;flex-shrink:0;}
+.nav-right{margin-left:auto;flex-shrink:0;padding-left:1rem;}
+.theme-toggle{cursor:pointer;}
+.toggle-track{width:44px;height:22px;background:var(--border);border-radius:50px;position:relative;}
+.toggle-thumb{width:16px;height:16px;background:var(--accent);border-radius:50%;position:absolute;top:3px;left:3px;
+  transition:transform .3s;box-shadow:0 0 6px var(--accent);}
+body.light .toggle-thumb{transform:translateX(22px);}
+.hamburger{display:flex;flex-direction:column;justify-content:center;gap:4px;cursor:pointer;padding:6px;margin-right:8px;flex-shrink:0;}
+.hamburger span{display:block;width:20px;height:2px;background:var(--muted);border-radius:2px;}
+.nav-item{position:relative;display:flex;align-items:center;}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;min-width:140px;padding-top:6px;z-index:200;}
+.nav-dropdown-inner{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.nav-item:hover .nav-dropdown{display:block;}
+.nav-links .nav-dropdown a{display:block;padding:7px 12px;font-family:var(--ui);font-size:var(--fs-xs);color:var(--muted);
+  border:none;border-left:2px solid transparent;border-radius:0;transition:.15s;}
+.nav-links .nav-dropdown a:hover,.nav-links .nav-dropdown a.nav-current{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,255,.04);}
+
+.nav-drawer{display:none;position:fixed;top:var(--nav-h);left:0;right:0;background:var(--panel);border-bottom:1px solid var(--border);
+  z-index:99;padding:.75rem 1.25rem 1rem;flex-direction:column;gap:2px;max-height:calc(100vh - var(--nav-h));overflow-y:auto;}
+.nav-drawer.open{display:flex;}
+.nav-drawer a{font-family:var(--ui);font-size:13px;color:var(--text-dim);text-decoration:none;padding:8px 10px;
+  border-radius:4px;border-left:2px solid transparent;transition:.15s;}
+.nav-drawer a:hover{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,255,.04);}
+.nav-drawer a.nav-current{color:var(--accent);}
+.drawer-sub{padding-left:1.8rem !important;font-size:11px !important;opacity:.8;}
+
+/* H3AD-SEC MENU SYNC: hamburger-only nav */
+.nav-links{display:none!important;}
+.hamburger{display:flex!important;}
+@media(max-width:380px){.xv-pill-tagline{display:none;}.nav-brand{margin-right:.5rem;}.nav{padding:0 .75rem;}.nav-right{padding-left:.5rem;}}
+
+/* ── Converter layout ── */
+.conv-wrap{flex:1;width:100%;max-width:820px;margin:0 auto;padding:28px 20px 60px;margin-top:var(--nav-h);
+  display:flex;flex-direction:column;gap:26px;position:relative;z-index:1;}
+
+.conv-intro{text-align:center;display:flex;flex-direction:column;gap:6px;}
+.conv-title{font-family:'Exo 2',sans-serif;font-weight:700;font-size:clamp(20px,3.4vw,28px);color:var(--text);}
+.conv-subtitle{font-size:13px;color:var(--muted);max-width:560px;margin:0 auto;}
+
+.conv-hero{text-align:center;padding:20px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;}
+.conv-help-btn{font-weight:700;padding:9px 14px;}
+.tz-select{font-family:var(--mono);font-size:10px;background:var(--bg);color:var(--text-dim);border:1px solid var(--border);
+  border-radius:4px;padding:5px 8px;outline:none;}
+.tz-select:focus{border-color:var(--accent);}
+.conv-hero-tz-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.conv-hero-tz-value{font-family:var(--mono);font-size:11px;color:var(--text-dim);word-break:break-word;}
+
+/* ── Show-more formats ── */
+.conv-more{background:transparent;}
+.conv-more summary{list-style:none;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  color:var(--muted);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:11px 16px;
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;transition:all .14s;}
+.conv-more summary::-webkit-details-marker{display:none;}
+.conv-more summary:hover{color:var(--accent);border-color:var(--accent);}
+.conv-more summary::before{content:'▸';font-size:9px;color:var(--muted-dim);transition:transform .15s;}
+.conv-more[open] summary::before{transform:rotate(90deg);}
+.conv-more[open] summary{margin-bottom:22px;}
+.conv-more-count{color:var(--muted-dim);font-size:10px;}
+.conv-more-inner{display:flex;flex-direction:column;gap:26px;}
+.conv-hero-label{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.conv-hero-value{font-family:var(--mono);font-size:clamp(17px,4vw,26px);font-weight:700;color:var(--accent);word-break:break-word;}
+.conv-hero-sub{font-family:var(--mono);font-size:11px;color:var(--muted-dim);margin-top:8px;word-break:break-word;}
+
+.conv-toolbar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.conv-btn{font-family:var(--mono);font-size:11px;letter-spacing:.08em;background:var(--panel);color:var(--text-dim);
+  border:1px solid var(--border);border-radius:4px;padding:9px 18px;cursor:pointer;transition:all .14s;}
+.conv-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.conv-section-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;
+  margin:6px 0 -10px 2px;}
+
+.conv-row{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:7px;transition:border-color .15s;}
+.conv-row.has-error{border-color:var(--status-partial);}
+.conv-label{font-family:'Exo 2',sans-serif;font-weight:600;font-size:13px;color:var(--text);}
+.conv-caption{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6;}
+.conv-input-row{display:flex;gap:8px;}
+.conv-input{flex:1;min-width:0;font-family:var(--mono);font-size:13px;background:var(--bg);color:var(--text);
+  border:1px solid var(--border);border-radius:4px;padding:9px 12px;outline:none;letter-spacing:.02em;}
+.conv-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,.1);}
+body.light .conv-input:focus{box-shadow:0 0 0 2px rgba(2,132,199,.12);}
+.conv-copy{font-family:var(--mono);font-size:10px;letter-spacing:.06em;background:transparent;color:var(--muted);
+  border:1px solid var(--border);border-radius:4px;padding:0 14px;cursor:pointer;white-space:nowrap;transition:all .14s;flex-shrink:0;}
+.conv-copy:hover{color:var(--accent);border-color:var(--accent);}
+.conv-error{font-family:var(--mono);font-size:10px;color:var(--status-partial);display:none;}
+.conv-row.has-error .conv-error{display:block;}
+
+.conv-hero-extra{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:.03em;}
+
+.conv-history{display:flex;flex-direction:column;gap:8px;align-items:center;}
+.conv-history-label{font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;}
+.conv-history-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.history-chip{font-family:var(--mono);font-size:10px;background:var(--panel);color:var(--text-dim);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px;cursor:pointer;transition:all .14s;}
+.history-chip:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── View tabs ── */
+.view-tabs-bar{display:flex;gap:2px;justify-content:center;background:var(--panel);border:1px solid var(--border);
+  border-radius:6px;padding:4px;align-self:center;}
+.view-tab{font-family:var(--mono);font-size:11px;letter-spacing:.08em;background:transparent;color:var(--muted);
+  border:1px solid transparent;border-radius:4px;padding:7px 16px;cursor:pointer;transition:all .14s;}
+.view-tab:hover{color:var(--text-dim);}
+.view-tab.active{color:var(--accent);border-color:var(--border);background:rgba(0,212,255,.06);}
+body.light .view-tab.active{background:rgba(2,132,199,.08);}
+
+#singleView{display:flex;flex-direction:column;gap:26px;}
+#singleView[hidden],#batchView[hidden],#durationView[hidden],#directView[hidden]{display:none!important;}
+
+/* ── Direct convert view ── */
+.direct-row{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}
+.direct-col{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px;}
+.direct-output-row{display:flex;gap:8px;}
+.direct-swap{font-size:16px;line-height:1;padding:11px 16px;flex-shrink:0;}
+.direct-mode-toggle{display:flex;gap:2px;background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  padding:4px;width:fit-content;margin-bottom:16px;}
+.mode-pill{font-family:var(--mono);font-size:10px;letter-spacing:.07em;background:transparent;color:var(--muted);
+  border:1px solid transparent;border-radius:4px;padding:7px 14px;cursor:pointer;transition:all .14s;}
+.mode-pill:hover{color:var(--text-dim);}
+.mode-pill.active{color:var(--accent);border-color:var(--border);background:rgba(0,212,255,.06);}
+body.light .mode-pill.active{background:rgba(2,132,199,.08);}
+#directSingleMode[hidden],#directBulkMode[hidden]{display:none!important;}
+#directBulkMode .batch-input{min-height:200px;}
+
+/* ── Batch view ── */
+.secondary-view-intro{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+.batch-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+.batch-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);}
+.batch-select{font-family:var(--mono);font-size:12px;background:var(--bg);color:var(--text);border:1px solid var(--border);
+  border-radius:4px;padding:8px 10px;outline:none;}
+.batch-select:focus{border-color:var(--accent);}
+.batch-input{width:100%;min-height:140px;font-family:var(--mono);font-size:12px;background:var(--bg);color:var(--text);
+  border:1px solid var(--border);border-radius:6px;padding:12px;resize:vertical;margin-bottom:12px;outline:none;}
+.batch-input:focus{border-color:var(--accent);}
+.batch-note{font-family:var(--mono);font-size:11px;color:var(--status-partial);background:rgba(245,158,11,.08);
+  border:1px solid var(--status-partial);border-radius:4px;padding:8px 12px;margin-bottom:12px;line-height:1.6;}
+.batch-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px;}
+.batch-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;white-space:nowrap;}
+.batch-table th{background:var(--panel-alt);color:var(--muted);text-align:left;padding:8px 10px;letter-spacing:.05em;
+  border-bottom:1px solid var(--border);}
+.batch-table td{padding:7px 10px;border-bottom:1px solid var(--border-dim);color:var(--text-dim);}
+.batch-table tr.row-error td{color:var(--status-partial);}
+.batch-table tr.row-ambiguous td:nth-child(2){color:var(--status-partial);}
+
+/* ── Duration view ── */
+.dur-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.dur-input-wrap{flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px;}
+.dur-result{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:20px;
+  font-family:var(--mono);font-size:13px;color:var(--text-dim);line-height:1.9;}
+.dur-result .big{font-size:22px;font-weight:700;color:var(--accent);}
+
+/* ── Footer ── */
+.tracer-footer{flex-shrink:0;border-top:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;
+  justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+  position:relative;z-index:1;background:var(--bg);}
+.footer-left{color:var(--muted);}
+.footer-right{color:var(--muted);text-transform:uppercase;opacity:.85;}
+.footer-credit-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
+.footer-credit-pill{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:6px;padding:4px 12px;border:1px solid var(--border);
+  border-radius:20px;text-decoration:none;transition:.15s;}
+.footer-credit-pill:hover{border-color:var(--accent);}
+.footer-credit-pill .credit-tool{font-weight:700;letter-spacing:2px;}
+.footer-credit-pill .credit-by{color:var(--muted);}
+.footer-credit-pill .credit-name{color:var(--accent);font-weight:700;letter-spacing:.5px;}
+@media(max-width:860px){.tracer-footer{flex-direction:column;justify-content:center;text-align:center;gap:.6rem;}.footer-credit-row{justify-content:center;}}
+body.light .footer-left,body.light .footer-right,body.light .footer-credit-pill .credit-by{color:#2E343B;}
+body.light .footer-credit-pill .credit-name{color:#0A6EA8;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="hamburger" id="hamburger" onclick="toggleDrawer()" role="button" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </div>
+  <a class="nav-brand" href="https://h3ad-sec.github.io">
+    <img id="navLogo" src="https://raw.githubusercontent.com/h3ad-sec/h3ad-sec.github.io/main/logo-dark.png" alt="H3AD-SEC" />
+  </a>
+  <a class="xv-nav-pill" id="xv-nav-pill" href="https://h3ad-sec.github.io/CHRONIFY/" style="text-decoration:none">
+    <span class="xv-pill-name"><span class="xv-pill-accent">CHRON</span><span class="xv-pill-text">IFY</span></span>
+    <span class="xv-pill-tagline">Timestamps, Decoded.</span>
+  </a>
+  <div class="nav-links">
+      <div class="nav-divider"></div>
+      <a href="https://h3ad-sec.github.io/H3AD/">H3AD</a>
+      <div class="nav-divider"></div>
+      <div class="nav-item">
+        <a href="https://h3ad-sec.github.io/H3AD-X/">H3AD-X</a>
+        <div class="nav-dropdown"><div class="nav-dropdown-inner">
+          <a href="https://h3ad-sec.github.io/IOC-VERDIKT/" target="_blank" rel="noopener">IOC-VERDIKT</a>
+          <a href="https://h3ad-sec.github.io/PARSE-X/" target="_blank" rel="noopener">PARSE-X</a>
+          <a href="https://h3ad-sec.github.io/DNSCOPE/" target="_blank" rel="noopener">DNSCOPE</a>
+          <a href="https://h3ad-sec.github.io/X-VERDIKT/" target="_blank" rel="noopener">X-VERDIKT</a>
+          <a href="https://h3ad-sec.github.io/MAILSCOPE/" target="_blank" rel="noopener">MAILSCOPE</a>
+          <a href="https://h3ad-sec.github.io/INFRA-SCOPE/" target="_blank" rel="noopener">INFRA-SCOPE</a>
+        </div></div>
+      </div>
+      <div class="nav-item">
+        <a href="https://h3ad-sec.github.io/H3AD-AI/">H3AD-AI</a>
+        <div class="nav-dropdown"><div class="nav-dropdown-inner">
+          <a href="https://h3ad-sec.github.io/PROMPTVAULT/" target="_blank" rel="noopener">PROMPTVAULT</a>
+        </div></div>
+      </div>
+      <div class="nav-item">
+        <a href="https://h3ad-sec.github.io/H3AD-DETECT/">H3AD-DETECT</a>
+        <div class="nav-dropdown"><div class="nav-dropdown-inner">
+          <a href="https://h3ad-sec.github.io/TRACERULES/" target="_blank" rel="noopener">TRACERULES</a>
+        </div></div>
+      </div>
+      <div class="nav-item">
+        <a href="https://h3ad-sec.github.io/H3AD-HUNT/">H3AD-HUNT</a>
+        <div class="nav-dropdown"><div class="nav-dropdown-inner">
+          <a href="https://h3ad-sec.github.io/HYPOS/" target="_blank" rel="noopener">HYPOS</a>
+          <a href="https://h3ad-sec.github.io/PIVEX/" target="_blank" rel="noopener">PIVEX</a>
+          <a href="https://h3ad-sec.github.io/TRACEPULSE/" target="_blank" rel="noopener">TRACEPULSE</a>
+        </div></div>
+      </div>
+      <div class="nav-item">
+        <a href="https://h3ad-sec.github.io/H3AD-OPS/">H3AD-OPS</a>
+        <div class="nav-dropdown"><div class="nav-dropdown-inner">
+          <a href="https://h3ad-sec.github.io/QUICKTRACE/" target="_blank" rel="noopener">QUICKTRACE</a>
+          <a href="https://h3ad-sec.github.io/PHISHOPS/" target="_blank" rel="noopener">PHISHOPS</a>
+        </div></div>
+      </div>
+      <div class="nav-item">
+        <a href="https://h3ad-sec.github.io/H3AD-DF/">H3AD-DF</a>
+        <div class="nav-dropdown"><div class="nav-dropdown-inner">
+          <a href="https://h3ad-sec.github.io/ARTIFEKTX/" target="_blank" rel="noopener">ARTIFEKTX</a>
+          <a href="https://h3ad-sec.github.io/CHRONIFY/" target="_blank" rel="noopener" class="nav-current">CHRONIFY</a>
+        </div></div>
+      </div>
+      <a href="https://h3ad-sec.github.io/H3AD-IR/">H3AD-IR</a>
+      <a href="https://h3ad-sec.github.io/H3AD-LEARN/">H3AD-LEARN</a>
+      <div class="nav-divider"></div>
+      <a href="mailto:h3adsec@gmail.com">CONTACT</a>
+    </div>
+  <div class="nav-right">
+    <div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" role="button" aria-label="Toggle theme">
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </div>
+  </div>
+</nav>
+
+<div class="nav-drawer" id="navDrawer">
+    <a href="https://h3ad-sec.github.io/H3AD/" onclick="closeDrawer()">H3AD</a>
+    <a href="https://h3ad-sec.github.io/H3AD-X/" onclick="closeDrawer()">H3AD-X</a>
+    <a href="https://h3ad-sec.github.io/IOC-VERDIKT/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ IOC-VERDIKT ↗</a>
+    <a href="https://h3ad-sec.github.io/PARSE-X/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ PARSE-X ↗</a>
+    <a href="https://h3ad-sec.github.io/DNSCOPE/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ DNSCOPE ↗</a>
+    <a href="https://h3ad-sec.github.io/X-VERDIKT/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ X-VERDIKT ↗</a>
+    <a href="https://h3ad-sec.github.io/MAILSCOPE/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ MAILSCOPE ↗</a>
+    <a href="https://h3ad-sec.github.io/INFRA-SCOPE/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ INFRA-SCOPE ↗</a>
+    <a href="https://h3ad-sec.github.io/H3AD-AI/" onclick="closeDrawer()">H3AD-AI</a>
+    <a href="https://h3ad-sec.github.io/PROMPTVAULT/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ PROMPTVAULT ↗</a>
+    <a href="https://h3ad-sec.github.io/H3AD-DETECT/" onclick="closeDrawer()">H3AD-DETECT</a>
+    <a href="https://h3ad-sec.github.io/TRACERULES/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ TRACERULES ↗</a>
+    <a href="https://h3ad-sec.github.io/H3AD-HUNT/" onclick="closeDrawer()">H3AD-HUNT</a>
+    <a href="https://h3ad-sec.github.io/HYPOS/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ HYPOS ↗</a>
+    <a href="https://h3ad-sec.github.io/PIVEX/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ PIVEX ↗</a>
+    <a href="https://h3ad-sec.github.io/TRACEPULSE/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ TRACEPULSE ↗</a>
+    <a href="https://h3ad-sec.github.io/H3AD-OPS/" onclick="closeDrawer()">H3AD-OPS</a>
+    <a href="https://h3ad-sec.github.io/QUICKTRACE/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ QUICKTRACE ↗</a>
+    <a href="https://h3ad-sec.github.io/PHISHOPS/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ PHISHOPS ↗</a>
+    <a href="https://h3ad-sec.github.io/H3AD-DF/" onclick="closeDrawer()">H3AD-DF</a>
+    <a href="https://h3ad-sec.github.io/ARTIFEKTX/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub">↳ ARTIFEKTX ↗</a>
+    <a href="https://h3ad-sec.github.io/CHRONIFY/" target="_blank" rel="noopener" onclick="closeDrawer()" class="drawer-sub nav-current">↳ CHRONIFY ↗</a>
+    <a href="https://h3ad-sec.github.io/H3AD-IR/" onclick="closeDrawer()">H3AD-IR</a>
+    <a href="https://h3ad-sec.github.io/H3AD-LEARN/" onclick="closeDrawer()">H3AD-LEARN</a>
+    <a href="mailto:h3adsec@gmail.com" onclick="closeDrawer()">CONTACT</a>
+</div>
+
+<div class="conv-wrap">
+
+  <div class="conv-intro">
+    <h1 class="conv-title">Forensic Timestamp Converter</h1>
+    <div class="conv-subtitle">Convert between forensic timestamp formats for timeline analysis. Edit any field, every other format updates instantly.</div>
+  </div>
+
+  <div class="view-tabs-bar">
+    <button class="view-tab active" data-view="single" onclick="setView('single')">SINGLE</button>
+    <button class="view-tab" data-view="direct" onclick="setView('direct')">DIRECT</button>
+    <button class="view-tab" data-view="batch" onclick="setView('batch')">BATCH</button>
+    <button class="view-tab" data-view="duration" onclick="setView('duration')">DURATION</button>
+  </div>
+
+<div id="singleView">
+
+  <div class="conv-hero">
+    <div class="conv-hero-label">Currently showing</div>
+    <div class="conv-hero-value" id="heroValue">&mdash;</div>
+    <div class="conv-hero-sub" id="heroSub">&nbsp;</div>
+    <div class="conv-hero-tz-row">
+      <select class="tz-select" id="tzSelect" onchange="onTzChange()" aria-label="Also show in timezone">
+        <option value="UTC">UTC</option>
+        <option value="America/New_York">America/New_York</option>
+        <option value="America/Chicago">America/Chicago</option>
+        <option value="America/Los_Angeles">America/Los_Angeles</option>
+        <option value="Europe/London">Europe/London</option>
+        <option value="Europe/Berlin">Europe/Berlin</option>
+        <option value="Asia/Kolkata">Asia/Kolkata</option>
+        <option value="Asia/Dubai">Asia/Dubai</option>
+        <option value="Asia/Singapore">Asia/Singapore</option>
+        <option value="Asia/Tokyo">Asia/Tokyo</option>
+        <option value="Australia/Sydney">Australia/Sydney</option>
+      </select>
+      <span class="conv-hero-tz-value" id="heroTz"></span>
+    </div>
+    <div class="conv-hero-extra" id="heroExtra">&nbsp;</div>
+  </div>
+
+  <div class="conv-toolbar">
+    <button class="conv-btn" onclick="setNow()">NOW</button>
+    <button class="conv-btn" onclick="clearAll()">CLEAR</button>
+    <button class="conv-btn" onclick="saveHistory()">&#9733; SAVE</button>
+    <button class="conv-btn" onclick="copyPermalink(this)">COPY LINK</button>
+    <button class="conv-btn" onclick="copyAllMarkdown(this)">COPY ALL (MD)</button>
+    <button class="conv-btn conv-help-btn" title="Shortcuts: / focus input, N now, 1-4 switch view, Esc unfocus" aria-label="Keyboard shortcuts help">?</button>
+  </div>
+
+  <div class="conv-history" id="historyRow" hidden>
+    <div class="conv-history-label">Recent</div>
+    <div class="conv-history-chips" id="historyChips"></div>
+  </div>
+
+  <div class="conv-row" id="row-unixS">
+    <div class="conv-label">Unix Epoch (seconds)</div>
+    <div class="conv-caption">Seconds since 1970-01-01 00:00:00 UTC. Used in Linux/macOS system logs, EXIF metadata, most REST APIs.</div>
+    <div class="conv-input-row">
+      <input class="conv-input" id="unixS" oninput="onFieldInput('unixS')" spellcheck="false" autocomplete="off" placeholder="1767000000" />
+      <button class="conv-copy" onclick="copyField('unixS',this)">COPY</button>
+    </div>
+    <div class="conv-error" id="err-unixS"></div>
+  </div>
+
+  <div class="conv-row" id="row-unixMs">
+    <div class="conv-label">Unix Epoch (milliseconds)</div>
+    <div class="conv-caption">Milliseconds since the Unix epoch. Used in JavaScript, Chrome DevTools, and most JSON-based application logs.</div>
+    <div class="conv-input-row">
+      <input class="conv-input" id="unixMs" oninput="onFieldInput('unixMs')" spellcheck="false" autocomplete="off" placeholder="1767000000000" />
+      <button class="conv-copy" onclick="copyField('unixMs',this)">COPY</button>
+    </div>
+    <div class="conv-error" id="err-unixMs"></div>
+  </div>
+
+  <div class="conv-row" id="row-filetimeDec">
+    <div class="conv-label">Windows FILETIME (decimal)</div>
+    <div class="conv-caption">100-nanosecond intervals since 1601-01-01 00:00:00 UTC. Found in NTFS $STANDARD_INFORMATION, registry key LastWrite time, EVTX records, Active Directory/LDAP timestamp attributes.</div>
+    <div class="conv-input-row">
+      <input class="conv-input" id="filetimeDec" oninput="onFieldInput('filetimeDec')" spellcheck="false" autocomplete="off" placeholder="133700000000000000" />
+      <button class="conv-copy" onclick="copyField('filetimeDec',this)">COPY</button>
+    </div>
+    <div class="conv-error" id="err-filetimeDec"></div>
+  </div>
+
+  <div class="conv-row" id="row-isoUtc">
+    <div class="conv-label">ISO 8601 (UTC)</div>
+    <div class="conv-caption">Accepts "YYYY-MM-DD HH:mm:ss" or full ISO 8601. Treated as UTC if no offset is given. Best format for timeline reports.</div>
+    <div class="conv-input-row">
+      <input class="conv-input" id="isoUtc" oninput="onFieldInput('isoUtc')" spellcheck="false" autocomplete="off" placeholder="2026-09-10 14:32:07 UTC" />
+      <button class="conv-copy" onclick="copyField('isoUtc',this)">COPY</button>
+    </div>
+    <div class="conv-error" id="err-isoUtc"></div>
+  </div>
+
+  <div class="conv-row" id="row-isoLocal">
+    <div class="conv-label">ISO 8601 (Local)</div>
+    <div class="conv-caption">Same instant, shown and parsed using this browser's local timezone. Useful for correlating with a suspect's stated timezone.</div>
+    <div class="conv-input-row">
+      <input class="conv-input" id="isoLocal" oninput="onFieldInput('isoLocal')" spellcheck="false" autocomplete="off" placeholder="2026-09-10 20:02:07 UTC+05:30" />
+      <button class="conv-copy" onclick="copyField('isoLocal',this)">COPY</button>
+    </div>
+    <div class="conv-error" id="err-isoLocal"></div>
+  </div>
+
+  <details class="conv-more" id="convMore">
+    <summary class="conv-more-toggle">Show 11 more formats <span class="conv-more-count">Windows extras &middot; Apple &middot; Excel &middot; Julian &middot; GPS &middot; RFC 2822</span></summary>
+    <div class="conv-more-inner">
+
+    <h2 class="conv-section-label">More Unix</h2>
+
+    <div class="conv-row" id="row-unixNs">
+      <div class="conv-label">Unix Epoch (nanoseconds)</div>
+      <div class="conv-caption">Nanoseconds since the Unix epoch. Seen in high-resolution Linux audit logs, eBPF/Sysdig traces, and some structured JSON logging pipelines.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="unixNs" oninput="onFieldInput('unixNs')" spellcheck="false" autocomplete="off" placeholder="1767000000000000000" />
+        <button class="conv-copy" onclick="copyField('unixNs',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-unixNs"></div>
+    </div>
+
+    <h2 class="conv-section-label">More Windows</h2>
+
+    <div class="conv-row" id="row-filetimeHex">
+      <div class="conv-label">Windows FILETIME (hex)</div>
+      <div class="conv-caption">Same value as above, shown as the 8-byte hex value commonly seen when parsing raw MFT/registry data with a hex editor.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="filetimeHex" oninput="onFieldInput('filetimeHex')" spellcheck="false" autocomplete="off" placeholder="0x01DC1234ABCD5678" />
+        <button class="conv-copy" onclick="copyField('filetimeHex',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-filetimeHex"></div>
+    </div>
+
+    <div class="conv-row" id="row-dotnetTicks">
+      <div class="conv-label">Windows / .NET Ticks</div>
+      <div class="conv-caption">100-nanosecond intervals since 0001-01-01 00:00:00 UTC. This is System.DateTime.Ticks in .NET/PowerShell &mdash; a different epoch than FILETIME above, easy to mix up.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="dotnetTicks" oninput="onFieldInput('dotnetTicks')" spellcheck="false" autocomplete="off" placeholder="639000000000000000" />
+        <button class="conv-copy" onclick="copyField('dotnetTicks',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-dotnetTicks"></div>
+    </div>
+
+    <div class="conv-row" id="row-dosHex">
+      <div class="conv-label">DOS Date/Time (32-bit)</div>
+      <div class="conv-caption">16-bit packed date + 16-bit packed time, 2-second resolution, valid 1980&ndash;2107. Found in FAT filesystem directory entries and ZIP archive local file headers. Stores no timezone; historically interpreted as local time on the originating system.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="dosHex" oninput="onFieldInput('dosHex')" spellcheck="false" autocomplete="off" placeholder="0x5A3B4C1E" />
+        <button class="conv-copy" onclick="copyField('dosHex',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-dosHex"></div>
+    </div>
+
+    <h2 class="conv-section-label">Apple</h2>
+
+    <div class="conv-row" id="row-webkit">
+      <div class="conv-label">Chrome / WebKit</div>
+      <div class="conv-caption">Microseconds since 1601-01-01 00:00:00 UTC. Used in Chrome/Edge/Brave History and Cookies SQLite databases (visits.visit_time, last_visit_time).</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="webkit" oninput="onFieldInput('webkit')" spellcheck="false" autocomplete="off" placeholder="13370000000000000" />
+        <button class="conv-copy" onclick="copyField('webkit',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-webkit"></div>
+    </div>
+
+    <div class="conv-row" id="row-macAbs">
+      <div class="conv-label">Mac Absolute Time</div>
+      <div class="conv-caption">Seconds since 2001-01-01 00:00:00 UTC. Used in macOS Cocoa/Core Data (CFAbsoluteTime, NSDate) and many plist timestamp values.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="macAbs" oninput="onFieldInput('macAbs')" spellcheck="false" autocomplete="off" placeholder="788000000" />
+        <button class="conv-copy" onclick="copyField('macAbs',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-macAbs"></div>
+    </div>
+
+    <div class="conv-row" id="row-hfs">
+      <div class="conv-label">HFS+ / Mac OS Classic</div>
+      <div class="conv-caption">Seconds since 1904-01-01 00:00:00 UTC. Legacy Macintosh filesystem timestamp (local time under classic HFS, UTC under HFS+).</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="hfs" oninput="onFieldInput('hfs')" spellcheck="false" autocomplete="off" placeholder="3849000000" />
+        <button class="conv-copy" onclick="copyField('hfs',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-hfs"></div>
+    </div>
+
+    <h2 class="conv-section-label">Office / Spreadsheet</h2>
+
+    <div class="conv-row" id="row-ole">
+      <div class="conv-label">OLE Automation Date / Excel Serial Date</div>
+      <div class="conv-caption">Days (with fractional day for time-of-day) since 1899-12-30. This is exactly what a date-formatted Excel cell shows as a raw number, and is also used in Microsoft Office/OLE-COM documents, VBA DATE values, and some registry DATE-typed values.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="ole" oninput="onFieldInput('ole')" spellcheck="false" autocomplete="off" placeholder="46000.5" />
+        <button class="conv-copy" onclick="copyField('ole',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-ole"></div>
+    </div>
+
+    <h2 class="conv-section-label">Legacy / Scientific</h2>
+
+    <div class="conv-row" id="row-julian">
+      <div class="conv-label">Julian Date (astronomical)</div>
+      <div class="conv-caption">Days since noon UTC, 4713 BC (proleptic Julian calendar). Used in astronomy, some satellite/imagery metadata, and legacy mainframe systems.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="julian" oninput="onFieldInput('julian')" spellcheck="false" autocomplete="off" placeholder="2461294.76" />
+        <button class="conv-copy" onclick="copyField('julian',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-julian"></div>
+    </div>
+
+    <h2 class="conv-section-label">Navigation</h2>
+
+    <div class="conv-row" id="row-gps">
+      <div class="conv-label">GPS Time</div>
+      <div class="conv-caption">Seconds since 1980-01-06 00:00:00 UTC. GPS time does not apply leap seconds, so it currently runs 18 seconds ahead of UTC (the offset as of the last leap second, 2016-12-31; it will change if a new one is ever scheduled). Relevant to vehicle, drone, and GNSS-device forensics.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="gps" oninput="onFieldInput('gps')" spellcheck="false" autocomplete="off" placeholder="1441540345" />
+        <button class="conv-copy" onclick="copyField('gps',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-gps"></div>
+    </div>
+
+    <h2 class="conv-section-label">Web / Email</h2>
+
+    <div class="conv-row" id="row-rfc2822">
+      <div class="conv-label">RFC 2822 (email Date header)</div>
+      <div class="conv-caption">Standard format for the Date header in email (RFC 5322) and HTTP. What you see when you open a message's raw source / full headers.</div>
+      <div class="conv-input-row">
+        <input class="conv-input" id="rfc2822" oninput="onFieldInput('rfc2822')" spellcheck="false" autocomplete="off" placeholder="Thu, 10 Sep 2026 14:32:07 GMT" />
+        <button class="conv-copy" onclick="copyField('rfc2822',this)">COPY</button>
+      </div>
+      <div class="conv-error" id="err-rfc2822"></div>
+    </div>
+
+    </div>
+  </details>
+
+</div>
+
+<div class="secondary-view" id="directView" hidden>
+  <h2 class="secondary-view-title">Direct Format Conversion</h2>
+  <div class="secondary-view-intro">Already know exactly which two formats you're going between? Skip the full list of 16 &mdash; pick source and target, then convert one value or paste many at once.</div>
+
+  <div class="direct-row">
+    <div class="direct-col">
+      <label class="batch-label" for="directFrom">FROM</label>
+      <select class="batch-select" id="directFrom" onchange="onDirectFormatChange()">
+        <option value="auto">Auto-detect (best effort)</option>
+        <option value="unixS">Unix Epoch (seconds)</option>
+        <option value="unixMs">Unix Epoch (milliseconds)</option>
+        <option value="unixNs">Unix Epoch (nanoseconds)</option>
+        <option value="filetimeDec">Windows FILETIME (decimal)</option>
+        <option value="filetimeHex">Windows FILETIME (hex)</option>
+        <option value="dotnetTicks">Windows / .NET Ticks</option>
+        <option value="dosHex">DOS Date/Time (32-bit hex)</option>
+        <option value="webkit">Chrome / WebKit</option>
+        <option value="macAbs">Mac Absolute Time</option>
+        <option value="hfs">HFS+ / Mac OS Classic</option>
+        <option value="ole">OLE Automation / Excel Serial Date</option>
+        <option value="julian">Julian Date</option>
+        <option value="gps">GPS Time</option>
+        <option value="rfc2822">RFC 2822 (email date)</option>
+        <option value="isoUtc">ISO 8601 (UTC)</option>
+        <option value="isoLocal">ISO 8601 (Local)</option>
+      </select>
+    </div>
+    <button class="conv-btn direct-swap" onclick="swapDirect()" title="Swap FROM and TO" aria-label="Swap FROM and TO">&#8646;</button>
+    <div class="direct-col">
+      <label class="batch-label" for="directTo">TO</label>
+      <select class="batch-select" id="directTo" onchange="onDirectFormatChange()">
+        <option value="isoUtc">ISO 8601 (UTC)</option>
+        <option value="unixS">Unix Epoch (seconds)</option>
+        <option value="unixMs">Unix Epoch (milliseconds)</option>
+        <option value="unixNs">Unix Epoch (nanoseconds)</option>
+        <option value="filetimeDec">Windows FILETIME (decimal)</option>
+        <option value="filetimeHex">Windows FILETIME (hex)</option>
+        <option value="dotnetTicks">Windows / .NET Ticks</option>
+        <option value="dosHex">DOS Date/Time (32-bit hex)</option>
+        <option value="webkit">Chrome / WebKit</option>
+        <option value="macAbs">Mac Absolute Time</option>
+        <option value="hfs">HFS+ / Mac OS Classic</option>
+        <option value="ole">OLE Automation / Excel Serial Date</option>
+        <option value="julian">Julian Date</option>
+        <option value="gps">GPS Time</option>
+        <option value="rfc2822">RFC 2822 (email date)</option>
+        <option value="isoLocal">ISO 8601 (Local)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="direct-mode-toggle">
+    <button class="mode-pill active" data-mode="single" onclick="setDirectMode('single')">SINGLE VALUE</button>
+    <button class="mode-pill" data-mode="bulk" onclick="setDirectMode('bulk')">BULK &middot; ONE PER LINE</button>
+  </div>
+
+  <div id="directSingleMode">
+    <div class="direct-row">
+      <div class="direct-col">
+        <input class="conv-input" id="directInput" oninput="onDirectInput()" placeholder="value in the FROM format..." spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="direct-col">
+        <div class="direct-output-row">
+          <input class="conv-input" id="directOutput" readonly placeholder="result appears here" />
+          <button class="conv-copy" onclick="copyField('directOutput',this)">COPY</button>
+        </div>
+      </div>
+    </div>
+    <div class="conv-error" id="err-direct"></div>
+  </div>
+
+  <div id="directBulkMode" hidden>
+    <div class="direct-row">
+      <div class="direct-col">
+        <textarea class="batch-input" id="directBulkInput" oninput="onDirectBulkInput()" placeholder="one value per line, in the FROM format..." spellcheck="false"></textarea>
+      </div>
+      <div class="direct-col">
+        <textarea class="batch-input" id="directBulkOutput" readonly placeholder="results appear here, one per line"></textarea>
+      </div>
+    </div>
+    <div class="conv-toolbar" style="justify-content:flex-start;">
+      <button class="conv-btn" onclick="copyBulkOutput(this)">COPY ALL RESULTS</button>
+    </div>
+    <div class="batch-note" id="directBulkNote" hidden></div>
+  </div>
+</div>
+
+<div class="secondary-view" id="batchView" hidden>
+  <h2 class="secondary-view-title">Batch Conversion</h2>
+  <div class="secondary-view-intro">Paste a list of timestamps (one per line) from a log export and convert them all at once. Pick the source format if you know it; use auto-detect only when you don't &mdash; it's a best-effort magnitude guess, not certain, and ambiguous rows are flagged for manual verification.</div>
+  <div class="batch-controls">
+    <label class="batch-label" for="batchFormat">INPUT FORMAT</label>
+    <select class="batch-select" id="batchFormat">
+      <option value="auto">Auto-detect (best effort)</option>
+      <option value="unixS">Unix Epoch (seconds)</option>
+      <option value="unixMs">Unix Epoch (milliseconds)</option>
+      <option value="unixNs">Unix Epoch (nanoseconds)</option>
+      <option value="filetimeDec">Windows FILETIME (decimal)</option>
+      <option value="filetimeHex">Windows FILETIME (hex)</option>
+      <option value="dotnetTicks">Windows / .NET Ticks</option>
+      <option value="dosHex">DOS Date/Time (32-bit hex)</option>
+      <option value="webkit">Chrome / WebKit</option>
+      <option value="macAbs">Mac Absolute Time</option>
+      <option value="hfs">HFS+ / Mac OS Classic</option>
+      <option value="ole">OLE Automation / Excel Serial Date</option>
+      <option value="julian">Julian Date</option>
+      <option value="gps">GPS Time</option>
+      <option value="rfc2822">RFC 2822 (email date)</option>
+      <option value="isoUtc">ISO 8601 (UTC)</option>
+      <option value="isoLocal">ISO 8601 (Local)</option>
+    </select>
+    <button class="conv-btn" onclick="runBatch()">CONVERT</button>
+  </div>
+  <textarea class="batch-input" id="batchInput" placeholder="One value per line, e.g.&#10;1767000000&#10;133700000000000000&#10;2026-09-10 14:32:07" spellcheck="false"></textarea>
+  <div class="batch-note" id="batchNote" hidden></div>
+  <div class="batch-table-wrap">
+    <table class="batch-table" id="batchTable" hidden>
+      <thead><tr>
+        <th>INPUT</th><th>DETECTED AS</th><th>UNIX MS</th><th>ISO UTC</th><th>ISO LOCAL</th><th>FILETIME</th><th>WEBKIT</th>
+      </tr></thead>
+      <tbody id="batchTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="secondary-view" id="durationView" hidden>
+  <h2 class="secondary-view-title">Duration Calculator</h2>
+  <div class="secondary-view-intro">Enter two timestamps (any format this tool auto-detects: Unix seconds/ms, ISO date, RFC 2822, etc.) to calculate the elapsed time between them &mdash; useful for correlating gaps between events on a timeline.</div>
+  <div class="dur-row">
+    <div class="dur-input-wrap">
+      <div class="conv-label">Timestamp A</div>
+      <input class="conv-input" id="durA" oninput="onDurationInput()" placeholder="2026-09-10 06:00:00" spellcheck="false" autocomplete="off" />
+    </div>
+    <div class="dur-input-wrap">
+      <div class="conv-label">Timestamp B</div>
+      <input class="conv-input" id="durB" oninput="onDurationInput()" placeholder="1767000000" spellcheck="false" autocomplete="off" />
+    </div>
+  </div>
+  <div class="dur-result" id="durResult">Enter both timestamps above.</div>
+</div>
+
+<footer class="tracer-footer">
+  <span class="footer-left">H3AD-SEC © 2026 &nbsp;|&nbsp; CHRONIFY</span>
+  <span class="footer-right">FORENSIC TIMESTAMP CONVERTER</span>
+  <div class="footer-credit-row">
+    <a class="footer-credit-pill" href="https://www.linkedin.com/in/hrushikesh-badgujar/" target="_blank" rel="noopener" title="Connect on LinkedIn">
+      <span class="credit-tool"><span class="xv-pill-accent">CHRON</span><span class="xv-pill-text">IFY</span></span>
+      <span class="credit-by">created by</span>
+      <span class="credit-name">H3AD</span>
+    </a>
+  </div>
+</footer>
+
+<script>
+function toggleDrawer(){document.getElementById('navDrawer').classList.toggle('open');}
+function closeDrawer(){document.getElementById('navDrawer').classList.remove('open');}
+
+(function(){
+  var saved=localStorage.getItem('h3ad-theme');
+  if(saved==='light')document.body.classList.add('light');
+  var logo=document.getElementById('navLogo');
+  if(logo)logo.src=document.body.classList.contains('light')
+    ?'https://raw.githubusercontent.com/h3ad-sec/h3ad-sec.github.io/main/logo-light.png'
+    :'https://raw.githubusercontent.com/h3ad-sec/h3ad-sec.github.io/main/logo-dark.png';
+})();
+function toggleTheme(){
+  var isLight=document.body.classList.toggle('light');
+  localStorage.setItem('h3ad-theme',isLight?'light':'dark');
+  var logo=document.getElementById('navLogo');
+  if(logo)logo.src=isLight
+    ?'https://raw.githubusercontent.com/h3ad-sec/h3ad-sec.github.io/main/logo-light.png'
+    :'https://raw.githubusercontent.com/h3ad-sec/h3ad-sec.github.io/main/logo-dark.png';
+}
+
+/* ── Timestamp conversion core ── */
+var SEC_1601_1970 = 11644473600n;
+var FILETIME_EPOCH_100NS = SEC_1601_1970 * 10000000n;
+var SEC_1970_2001 = 978307200;
+var SEC_1904_1970 = 2082844800;
+var OLE_EPOCH_OFFSET_DAYS = 25569;
+
+function unixMsToFiletime(ms){ return BigInt(Math.round(ms))*10000n + FILETIME_EPOCH_100NS; }
+function filetimeToUnixMs(ft){ return Number((ft - FILETIME_EPOCH_100NS)/10000n); }
+function unixMsToWebkit(ms){ return BigInt(Math.round(ms))*1000n + SEC_1601_1970*1000000n; }
+function webkitToUnixMs(wk){ return Number((wk - SEC_1601_1970*1000000n)/1000n); }
+function unixMsToMacAbs(ms){ return Math.round(ms/1000) - SEC_1970_2001; }
+function macAbsToUnixMs(sec){ return (sec + SEC_1970_2001)*1000; }
+function unixMsToHfs(ms){ return Math.round(ms/1000) + SEC_1904_1970; }
+function hfsToUnixMs(sec){ return (sec - SEC_1904_1970)*1000; }
+function unixMsToOle(ms){ return ms/86400000 + OLE_EPOCH_OFFSET_DAYS; }
+function oleToUnixMs(days){ return (days - OLE_EPOCH_OFFSET_DAYS)*86400000; }
+
+var DOTNET_TICKS_EPOCH_100NS = 621355968000000000n;
+var GPS_EPOCH_OFFSET_SEC = 315964800;
+var GPS_LEAP_SECONDS = 18;
+var JULIAN_EPOCH_OFFSET_DAYS = 2440587.5;
+
+function unixMsToDotnetTicks(ms){ return BigInt(Math.round(ms))*10000n + DOTNET_TICKS_EPOCH_100NS; }
+function dotnetTicksToUnixMs(t){ return Number((t - DOTNET_TICKS_EPOCH_100NS)/10000n); }
+function unixMsToNs(ms){ return BigInt(Math.round(ms))*1000000n; }
+function nsToUnixMs(ns){ return Number(ns/1000000n); }
+function unixMsToGps(ms){ return Math.round(ms/1000) - GPS_EPOCH_OFFSET_SEC + GPS_LEAP_SECONDS; }
+function gpsToUnixMs(g){ return (g - GPS_LEAP_SECONDS + GPS_EPOCH_OFFSET_SEC)*1000; }
+function unixMsToJulian(ms){ return ms/86400000 + JULIAN_EPOCH_OFFSET_DAYS; }
+function julianToUnixMs(jd){ return (jd - JULIAN_EPOCH_OFFSET_DAYS)*86400000; }
+function fmtRfc2822(d){ return d.toUTCString(); }
+function parseRfc2822(raw){ return Date.parse(raw.trim()); }
+
+function isoWeekInfo(d){
+  var target=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+  var dayNr=(target.getUTCDay()+6)%7;
+  target.setUTCDate(target.getUTCDate()-dayNr+3);
+  var firstThursday=target.getTime();
+  target.setUTCMonth(0,1);
+  if(target.getUTCDay()!==4){ target.setUTCMonth(0,1+((4-target.getUTCDay())+7)%7); }
+  var week=1+Math.round((firstThursday-target.getTime())/(7*86400000));
+  return {week:week, isoYear:new Date(firstThursday).getUTCFullYear()};
+}
+function daysInYear(y){ return ((y%4===0&&y%100!==0)||y%400===0)?366:365; }
+function dayOfYear(d){
+  var start=Date.UTC(d.getUTCFullYear(),0,1);
+  return Math.floor((Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())-start)/86400000)+1;
+}
+function relativeTime(ms){
+  var diff=Date.now()-ms, abs=Math.abs(diff);
+  var units=[['year',31557600000],['month',2629800000],['day',86400000],['hour',3600000],['minute',60000],['second',1000]];
+  for(var i=0;i<units.length;i++){
+    var name=units[i][0], size=units[i][1];
+    if(abs>=size || name==='second'){
+      var val=Math.floor(abs/size);
+      if(val<1 && name!=='second') continue;
+      var plural=val===1?'':'s';
+      return diff>=0 ? (val+' '+name+plural+' ago') : ('in '+val+' '+name+plural);
+    }
+  }
+  return 'just now';
+}
+
+function unixToDos(ms){
+  var d=new Date(ms), year=d.getUTCFullYear();
+  if(year<1980||year>2107) return null;
+  var dosDate=((year-1980)<<9)|((d.getUTCMonth()+1)<<5)|d.getUTCDate();
+  var dosTime=(d.getUTCHours()<<11)|(d.getUTCMinutes()<<5)|Math.floor(d.getUTCSeconds()/2);
+  return ((dosDate<<16)|dosTime)>>>0;
+}
+function dosToUnix(val){
+  var dosDate=(val>>>16)&0xFFFF, dosTime=val&0xFFFF;
+  var year=1980+((dosDate>>9)&0x7F), month=(dosDate>>5)&0xF, day=dosDate&0x1F;
+  var hour=(dosTime>>11)&0x1F, min=(dosTime>>5)&0x3F, sec=(dosTime&0x1F)*2;
+  if(month<1||month>12||day<1||day>31) throw new Error('bad dos date');
+  return Date.UTC(year,month-1,day,hour,min,sec);
+}
+
+function fmtNum(n){
+  if(!isFinite(n)) return '';
+  if(Number.isInteger(n)) return String(n);
+  return n.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtUtc(d){
+  return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())+' '
+    +pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+':'+pad(d.getUTCSeconds())+' UTC';
+}
+function fmtLocal(d){
+  var off=-d.getTimezoneOffset(), sign=off>=0?'+':'-'; off=Math.abs(off);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '
+    +pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())
+    +' UTC'+sign+pad(Math.floor(off/60))+':'+pad(off%60);
+}
+function parseIsoUtc(raw){
+  var s=raw.trim().replace(/\s+UTC$/i,'').replace(' ','T');
+  if(!/[Zz]$|[+-]\d\d:\d\d$/.test(s)) s+='Z';
+  return Date.parse(s);
+}
+function parseIsoLocal(raw){
+  var s=raw.trim().replace(/\s+UTC[+-]\d\d:\d\d$/i,'').replace(' ','T');
+  return Date.parse(s);
+}
+function hexClean(raw){ return raw.trim().replace(/^0[xX]/,''); }
+
+var FIELDS=['unixS','unixMs','unixNs','filetimeDec','filetimeHex','dotnetTicks','webkit','macAbs','hfs','dosHex','ole','julian','gps','rfc2822','isoUtc','isoLocal'];
+function fmtInTz(d, tz){
+  try{
+    var parts=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',
+      hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZoneName:'shortOffset'}).formatToParts(d);
+    var map={}; parts.forEach(function(p){ map[p.type]=p.value; });
+    return map.year+'-'+map.month+'-'+map.day+' '+map.hour+':'+map.minute+':'+map.second+' '+tz+' ('+(map.timeZoneName||'')+')';
+  }catch(e){ return 'Unsupported timezone'; }
+}
+function onTzChange(){
+  var ms=Number(document.getElementById('unixMs').value);
+  var tzSel=document.getElementById('tzSelect');
+  if(isFinite(ms) && tzSel) document.getElementById('heroTz').textContent=fmtInTz(new Date(ms), tzSel.value);
+}
+var DOW_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function setError(id,msg){
+  var row=document.getElementById('row-'+id), err=document.getElementById('err-'+id);
+  if(!row||!err) return;
+  err.textContent=msg||'';
+  row.classList.toggle('has-error',!!msg);
+}
+
+function syncFromUnixMs(ms, exceptId){
+  ms=Math.round(ms);
+  var d=new Date(ms);
+  var set=function(id,val){ if(id===exceptId) return; var el=document.getElementById(id); if(el) el.value=val; setError(id,''); };
+
+  set('unixS', fmtNum(ms/1000));
+  set('unixMs', String(ms));
+  set('unixNs', unixMsToNs(ms).toString());
+  var ft=unixMsToFiletime(ms);
+  set('filetimeDec', ft.toString());
+  set('filetimeHex', '0x'+ft.toString(16).toUpperCase().padStart(16,'0'));
+  set('dotnetTicks', unixMsToDotnetTicks(ms).toString());
+  var wk=unixMsToWebkit(ms);
+  set('webkit', wk.toString());
+  set('macAbs', fmtNum(unixMsToMacAbs(ms)));
+  set('hfs', fmtNum(unixMsToHfs(ms)));
+
+  var dos;
+  try{ dos=unixToDos(ms); }catch(e){ dos=null; }
+  if(exceptId!=='dosHex'){
+    if(dos===null){ document.getElementById('dosHex').value=''; setError('dosHex','Out of DOS range (1980\u20132107)'); }
+    else { set('dosHex', '0x'+dos.toString(16).toUpperCase().padStart(8,'0')); }
+  }
+
+  set('ole', fmtNum(unixMsToOle(ms)));
+  set('julian', fmtNum(unixMsToJulian(ms)));
+  set('gps', fmtNum(unixMsToGps(ms)));
+  set('rfc2822', fmtRfc2822(d));
+  set('isoUtc', fmtUtc(d));
+  set('isoLocal', fmtLocal(d));
+  var tzSel=document.getElementById('tzSelect');
+  if(tzSel) document.getElementById('heroTz').textContent=fmtInTz(d, tzSel.value);
+
+  document.getElementById('heroValue').textContent=fmtUtc(d);
+  document.getElementById('heroSub').textContent='Local: '+fmtLocal(d);
+  var iw=isoWeekInfo(d);
+  document.getElementById('heroExtra').textContent = DOW_NAMES[d.getUTCDay()]+' \u00b7 Week '+iw.week+' of '+iw.isoYear
+    +' \u00b7 Day '+dayOfYear(d)+' of '+daysInYear(d.getUTCFullYear())+' \u00b7 '+relativeTime(ms);
+}
+
+function onFieldInput(id){
+  var el=document.getElementById(id), raw=el.value;
+  if(raw.trim()===''){ setError(id,''); return; }
+  var ms;
+  try{
+    switch(id){
+      case 'unixS': ms=parseFloat(raw)*1000; break;
+      case 'unixMs': ms=parseFloat(raw); break;
+      case 'unixNs': ms=nsToUnixMs(BigInt(raw.trim())); break;
+      case 'filetimeDec': ms=filetimeToUnixMs(BigInt(raw.trim())); break;
+      case 'filetimeHex': ms=filetimeToUnixMs(BigInt('0x'+hexClean(raw))); break;
+      case 'dotnetTicks': ms=dotnetTicksToUnixMs(BigInt(raw.trim())); break;
+      case 'webkit': ms=webkitToUnixMs(BigInt(raw.trim())); break;
+      case 'macAbs': ms=macAbsToUnixMs(parseFloat(raw)); break;
+      case 'hfs': ms=hfsToUnixMs(parseFloat(raw)); break;
+      case 'dosHex': {
+        var num=parseInt(hexClean(raw),16);
+        if(isNaN(num)) throw new Error('bad');
+        ms=dosToUnix(num>>>0);
+        break;
+      }
+      case 'ole': ms=oleToUnixMs(parseFloat(raw)); break;
+      case 'julian': ms=julianToUnixMs(parseFloat(raw)); break;
+      case 'gps': ms=gpsToUnixMs(parseFloat(raw)); break;
+      case 'rfc2822': ms=parseRfc2822(raw); break;
+      case 'isoUtc': ms=parseIsoUtc(raw); break;
+      case 'isoLocal': ms=parseIsoLocal(raw); break;
+    }
+  }catch(e){ ms=NaN; }
+
+  if(ms===undefined || isNaN(ms) || !isFinite(ms)){
+    setError(id,'Invalid value for this format');
+    return;
+  }
+  syncFromUnixMs(ms, id);
+}
+
+function setNow(){ syncFromUnixMs(Date.now(), null); }
+function clearAll(){
+  FIELDS.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; setError(id,''); });
+  document.getElementById('heroValue').textContent='\u2014';
+  document.getElementById('heroSub').textContent='\u00a0';
+  document.getElementById('heroTz').textContent='';
+  document.getElementById('heroExtra').textContent='\u00a0';
+}
+function flashBtn(btn,text){
+  var orig=btn.textContent; btn.textContent=text;
+  setTimeout(function(){ btn.textContent=orig; },1200);
+}
+function copyField(id,btn){
+  var el=document.getElementById(id);
+  if(!el||!el.value) return;
+  navigator.clipboard.writeText(el.value).then(function(){ flashBtn(btn,'COPIED'); });
+}
+
+/* \u2500\u2500 View switching \u2500\u2500 */
+function setView(v){
+  ['single','direct','batch','duration'].forEach(function(name){
+    document.getElementById(name+'View').hidden = name!==v;
+  });
+  document.querySelectorAll('.view-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.view===v); });
+}
+
+/* \u2500\u2500 Permalink \u2500\u2500 */
+function copyPermalink(btn){
+  var ms=document.getElementById('unixMs').value;
+  if(!ms) return;
+  var url=location.origin+location.pathname+'?t='+encodeURIComponent(ms);
+  navigator.clipboard.writeText(url).then(function(){ flashBtn(btn,'COPIED'); });
+}
+
+/* \u2500\u2500 Export as markdown \u2500\u2500 */
+function copyAllMarkdown(btn){
+  var rows=[
+    ['Unix Epoch (seconds)','unixS'],['Unix Epoch (milliseconds)','unixMs'],['Unix Epoch (nanoseconds)','unixNs'],
+    ['Windows FILETIME (decimal)','filetimeDec'],['Windows FILETIME (hex)','filetimeHex'],['Windows / .NET Ticks','dotnetTicks'],
+    ['DOS Date/Time (32-bit)','dosHex'],['Chrome / WebKit','webkit'],['Mac Absolute Time','macAbs'],['HFS+ / Mac OS Classic','hfs'],
+    ['OLE Automation / Excel Serial Date','ole'],['Julian Date','julian'],['GPS Time','gps'],['RFC 2822','rfc2822'],
+    ['ISO 8601 (UTC)','isoUtc'],['ISO 8601 (Local)','isoLocal']
+  ];
+  var lines=['| Format | Value |','|---|---|'];
+  rows.forEach(function(r){
+    var el=document.getElementById(r[1]);
+    lines.push('| '+r[0]+' | `'+(el?el.value:'')+'` |');
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(function(){ flashBtn(btn,'COPIED'); });
+}
+
+/* \u2500\u2500 History \u2500\u2500 */
+function loadHistoryArr(){
+  try{ return JSON.parse(localStorage.getItem('chronify-history')||'[]'); }catch(e){ return []; }
+}
+function saveHistory(){
+  var ms=Number(document.getElementById('unixMs').value);
+  if(!isFinite(ms)) return;
+  var hist=loadHistoryArr().filter(function(h){ return h.ms!==ms; });
+  hist.unshift({ms:ms, label:document.getElementById('isoUtc').value});
+  hist=hist.slice(0,10);
+  localStorage.setItem('chronify-history', JSON.stringify(hist));
+  renderHistory();
+}
+function renderHistory(){
+  var hist=loadHistoryArr();
+  var row=document.getElementById('historyRow'), chips=document.getElementById('historyChips');
+  if(!hist.length){ row.hidden=true; return; }
+  row.hidden=false;
+  chips.innerHTML='';
+  hist.forEach(function(h){
+    var b=document.createElement('button');
+    b.className='history-chip';
+    b.textContent=h.label;
+    b.onclick=function(){ syncFromUnixMs(h.ms,null); };
+    chips.appendChild(b);
+  });
+}
+
+/* \u2500\u2500 Batch mode \u2500\u2500 */
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+function autoDetectToUnixMs(raw){
+  raw=raw.trim();
+  if(raw==='') return null;
+  if(/^0x[0-9a-fA-F]+$/i.test(raw)){
+    var hexDigits=raw.length-2;
+    if(hexDigits<=8){
+      var num=parseInt(hexClean(raw),16);
+      if(isNaN(num)) return null;
+      try{ return {ms:dosToUnix(num>>>0), format:'DOS Date/Time', ambiguous:false}; }catch(e){ return null; }
+    }
+    try{ return {ms:filetimeToUnixMs(BigInt(raw)), format:'Windows FILETIME (hex)', ambiguous:false}; }catch(e){ return null; }
+  }
+  if(/^-?\d+$/.test(raw)){
+    var candidates=[], big=null;
+    try{ big=BigInt(raw); }catch(e){ big=null; }
+    function tryCand(name,msVal){
+      if(msVal===null||msVal===undefined||isNaN(msVal)||!isFinite(msVal)) return;
+      var y=new Date(msVal).getUTCFullYear();
+      if(y>=1990 && y<=2040) candidates.push({format:name, ms:msVal});
+    }
+    tryCand('Unix Epoch (seconds)', parseFloat(raw)*1000);
+    tryCand('Unix Epoch (milliseconds)', parseFloat(raw));
+    if(big!==null){
+      try{ tryCand('Unix Epoch (nanoseconds)', nsToUnixMs(big)); }catch(e){}
+      try{ tryCand('Windows FILETIME (decimal)', filetimeToUnixMs(big)); }catch(e){}
+      try{ tryCand('Chrome / WebKit', webkitToUnixMs(big)); }catch(e){}
+      try{ tryCand('Windows / .NET Ticks', dotnetTicksToUnixMs(big)); }catch(e){}
+    }
+    tryCand('Mac Absolute Time', macAbsToUnixMs(parseFloat(raw)));
+    tryCand('HFS+ / Mac OS Classic', hfsToUnixMs(parseFloat(raw)));
+    tryCand('GPS Time', gpsToUnixMs(parseFloat(raw)));
+    if(candidates.length===0) return null;
+    var priority=['Unix Epoch (milliseconds)','Unix Epoch (seconds)','Windows FILETIME (decimal)','Chrome / WebKit',
+      'Windows / .NET Ticks','Unix Epoch (nanoseconds)','HFS+ / Mac OS Classic','Mac Absolute Time','GPS Time'];
+    candidates.sort(function(a,b){ return priority.indexOf(a.format)-priority.indexOf(b.format); });
+    return {ms:candidates[0].ms, format:candidates[0].format, ambiguous:candidates.length>1};
+  }
+  if(/^-?\d+\.\d+$/.test(raw)){
+    var f=parseFloat(raw), candidates2=[];
+    function tryCandF(name,msVal){
+      var y=new Date(msVal).getUTCFullYear();
+      if(y>=1990&&y<=2040) candidates2.push({format:name,ms:msVal});
+    }
+    tryCandF('OLE Automation / Excel Serial Date', oleToUnixMs(f));
+    tryCandF('Julian Date', julianToUnixMs(f));
+    tryCandF('Unix Epoch (seconds)', f*1000);
+    if(candidates2.length===0) return null;
+    var priority2=['OLE Automation / Excel Serial Date','Julian Date','Unix Epoch (seconds)'];
+    candidates2.sort(function(a,b){ return priority2.indexOf(a.format)-priority2.indexOf(b.format); });
+    return {ms:candidates2[0].ms, format:candidates2[0].format, ambiguous:candidates2.length>1};
+  }
+  var p=Date.parse(raw.replace(' ','T'));
+  if(!isNaN(p)) return {ms:p, format:'ISO / RFC 2822 date string', ambiguous:false};
+  p=Date.parse(raw);
+  if(!isNaN(p)) return {ms:p, format:'ISO / RFC 2822 date string', ambiguous:false};
+  return null;
+}
+function parseWithFormat(fmt, raw){
+  raw=raw.trim();
+  if(raw==='') return NaN;
+  try{
+    switch(fmt){
+      case 'unixS': return parseFloat(raw)*1000;
+      case 'unixMs': return parseFloat(raw);
+      case 'unixNs': return nsToUnixMs(BigInt(raw));
+      case 'filetimeDec': return filetimeToUnixMs(BigInt(raw));
+      case 'filetimeHex': return filetimeToUnixMs(BigInt('0x'+hexClean(raw)));
+      case 'dotnetTicks': return dotnetTicksToUnixMs(BigInt(raw));
+      case 'dosHex': { var n=parseInt(hexClean(raw),16); return dosToUnix(n>>>0); }
+      case 'webkit': return webkitToUnixMs(BigInt(raw));
+      case 'macAbs': return macAbsToUnixMs(parseFloat(raw));
+      case 'hfs': return hfsToUnixMs(parseFloat(raw));
+      case 'ole': return oleToUnixMs(parseFloat(raw));
+      case 'julian': return julianToUnixMs(parseFloat(raw));
+      case 'gps': return gpsToUnixMs(parseFloat(raw));
+      case 'rfc2822': return parseRfc2822(raw);
+      case 'isoUtc': return parseIsoUtc(raw);
+      case 'isoLocal': return parseIsoLocal(raw);
+    }
+  }catch(e){ return NaN; }
+  return NaN;
+}
+function runBatch(){
+  var fmt=document.getElementById('batchFormat').value;
+  var lines=document.getElementById('batchInput').value.split('\n').map(function(l){return l.trim();}).filter(function(l){return l!=='';});
+  var tbody=document.getElementById('batchTbody');
+  tbody.innerHTML='';
+  var anyAmbiguous=false, anyError=false;
+  lines.forEach(function(line){
+    var tr=document.createElement('tr');
+    var detected='', ms=null, ambiguous=false;
+    if(fmt==='auto'){
+      var r=autoDetectToUnixMs(line);
+      if(r){ ms=r.ms; detected=r.format+(r.ambiguous?' (ambiguous)':''); ambiguous=r.ambiguous; }
+    } else {
+      ms=parseWithFormat(fmt, line);
+      var opt=document.querySelector('#batchFormat option[value="'+fmt+'"]');
+      detected=opt?opt.textContent:fmt;
+    }
+    if(ms===null||ms===undefined||isNaN(ms)||!isFinite(ms)){
+      tr.className='row-error';
+      tr.innerHTML='<td>'+escapeHtml(line)+'</td><td>&mdash;</td><td colspan="5">Could not parse</td>';
+      anyError=true;
+    } else {
+      ms=Math.round(ms);
+      var d=new Date(ms);
+      if(ambiguous) anyAmbiguous=true;
+      tr.className=ambiguous?'row-ambiguous':'';
+      tr.innerHTML='<td>'+escapeHtml(line)+'</td>'
+        +'<td>'+escapeHtml(detected)+'</td>'
+        +'<td>'+ms+'</td>'
+        +'<td>'+fmtUtc(d)+'</td>'
+        +'<td>'+fmtLocal(d)+'</td>'
+        +'<td>'+unixMsToFiletime(ms).toString()+'</td>'
+        +'<td>'+unixMsToWebkit(ms).toString()+'</td>';
+    }
+    tbody.appendChild(tr);
+  });
+  document.getElementById('batchTable').hidden=lines.length===0;
+  var note=document.getElementById('batchNote');
+  if(fmt==='auto' && (anyAmbiguous||anyError)){
+    note.hidden=false;
+    note.textContent='Auto-detect is best-effort: '
+      +(anyAmbiguous?'some values matched more than one plausible format (marked, verify manually). ':'')
+      +(anyError?'some values could not be parsed at all.':'');
+  } else {
+    note.hidden=true;
+  }
+}
+
+/* \u2500\u2500 Direct format-to-format convert \u2500\u2500 */
+function formatForOutput(fmt, ms){
+  var d=new Date(ms);
+  switch(fmt){
+    case 'unixS': return fmtNum(ms/1000);
+    case 'unixMs': return String(ms);
+    case 'unixNs': return unixMsToNs(ms).toString();
+    case 'filetimeDec': return unixMsToFiletime(ms).toString();
+    case 'filetimeHex': return '0x'+unixMsToFiletime(ms).toString(16).toUpperCase().padStart(16,'0');
+    case 'dotnetTicks': return unixMsToDotnetTicks(ms).toString();
+    case 'dosHex': { var dos; try{ dos=unixToDos(ms); }catch(e){ dos=null; } return dos===null?'(out of DOS range, 1980\u20132107)':'0x'+dos.toString(16).toUpperCase().padStart(8,'0'); }
+    case 'webkit': return unixMsToWebkit(ms).toString();
+    case 'macAbs': return fmtNum(unixMsToMacAbs(ms));
+    case 'hfs': return fmtNum(unixMsToHfs(ms));
+    case 'ole': return fmtNum(unixMsToOle(ms));
+    case 'julian': return fmtNum(unixMsToJulian(ms));
+    case 'gps': return fmtNum(unixMsToGps(ms));
+    case 'rfc2822': return fmtRfc2822(d);
+    case 'isoUtc': return fmtUtc(d);
+    case 'isoLocal': return fmtLocal(d);
+  }
+  return '';
+}
+function onDirectInput(){
+  var fromFmt=document.getElementById('directFrom').value;
+  var toFmt=document.getElementById('directTo').value;
+  var raw=document.getElementById('directInput').value;
+  var out=document.getElementById('directOutput');
+  var errEl=document.getElementById('err-direct');
+  function showError(msg){ errEl.textContent=msg; errEl.style.display=msg?'block':'none'; }
+  if(raw.trim()===''){ out.value=''; showError(''); return; }
+  var ms;
+  if(fromFmt==='auto'){
+    var r=autoDetectToUnixMs(raw);
+    if(!r){ out.value=''; showError('Could not auto-detect a format for this value.'); return; }
+    ms=r.ms;
+  } else {
+    ms=parseWithFormat(fromFmt, raw);
+  }
+  if(ms===null||ms===undefined||isNaN(ms)||!isFinite(ms)){
+    out.value=''; showError('Invalid value for the selected FROM format.'); return;
+  }
+  ms=Math.round(ms);
+  showError('');
+  out.value=formatForOutput(toFmt, ms);
+}
+function isDirectBulkMode(){ return !document.getElementById('directBulkMode').hidden; }
+function onDirectFormatChange(){
+  if(isDirectBulkMode()) onDirectBulkInput(); else onDirectInput();
+}
+function setDirectMode(mode){
+  document.getElementById('directSingleMode').hidden = mode!=='single';
+  document.getElementById('directBulkMode').hidden = mode!=='bulk';
+  document.querySelectorAll('.mode-pill').forEach(function(p){ p.classList.toggle('active', p.dataset.mode===mode); });
+  onDirectFormatChange();
+}
+function onDirectBulkInput(){
+  var fromFmt=document.getElementById('directFrom').value;
+  var toFmt=document.getElementById('directTo').value;
+  var lines=document.getElementById('directBulkInput').value.split('\n');
+  var note=document.getElementById('directBulkNote');
+  var anyError=false, anyAmbiguous=false;
+  var outLines=lines.map(function(line){
+    var trimmed=line.trim();
+    if(trimmed==='') return '';
+    var ms, ambiguous=false;
+    if(fromFmt==='auto'){
+      var r=autoDetectToUnixMs(trimmed);
+      if(!r){ anyError=true; return '⚠ could not parse'; }
+      ms=r.ms; ambiguous=r.ambiguous; if(ambiguous) anyAmbiguous=true;
+    } else {
+      ms=parseWithFormat(fromFmt, trimmed);
+    }
+    if(ms===null||ms===undefined||isNaN(ms)||!isFinite(ms)){ anyError=true; return '⚠ invalid'; }
+    ms=Math.round(ms);
+    var out=formatForOutput(toFmt, ms);
+    return ambiguous ? out+'  (ambiguous)' : out;
+  });
+  document.getElementById('directBulkOutput').value=outLines.join('\n');
+  if(anyError||anyAmbiguous){
+    note.hidden=false;
+    note.textContent=(anyError?'Some lines could not be parsed (marked ⚠). ':'')
+      +(fromFmt==='auto'&&anyAmbiguous?'Some auto-detected lines matched more than one plausible format (marked, verify manually).':'');
+  } else {
+    note.hidden=true;
+  }
+}
+function copyBulkOutput(btn){
+  var el=document.getElementById('directBulkOutput');
+  if(!el.value) return;
+  navigator.clipboard.writeText(el.value).then(function(){ flashBtn(btn,'COPIED'); });
+}
+function swapDirect(){
+  var fromSel=document.getElementById('directFrom'), toSel=document.getElementById('directTo');
+  var fromVal=fromSel.value, toVal=toSel.value;
+  var toHasFrom=Array.from(toSel.options).some(function(o){ return o.value===fromVal; });
+  var fromHasTo=Array.from(fromSel.options).some(function(o){ return o.value===toVal; });
+  if(toHasFrom) toSel.value=fromVal;
+  if(fromHasTo) fromSel.value=toVal;
+
+  if(isDirectBulkMode()){
+    var outLines=document.getElementById('directBulkOutput').value.split('\n').map(function(l){
+      if(l.indexOf('⚠')===0) return '';
+      return l.replace(/\s*\(ambiguous\)$/,'');
+    });
+    document.getElementById('directBulkInput').value=outLines.join('\n');
+    onDirectBulkInput();
+  } else {
+    var out=document.getElementById('directOutput').value;
+    if(out) document.getElementById('directInput').value=out;
+    onDirectInput();
+  }
+}
+
+/* \u2500\u2500 Duration calculator \u2500\u2500 */
+function onDurationInput(){
+  var aRaw=document.getElementById('durA').value, bRaw=document.getElementById('durB').value;
+  var res=document.getElementById('durResult');
+  if(!aRaw.trim()||!bRaw.trim()){ res.textContent='Enter both timestamps above.'; return; }
+  var aR=autoDetectToUnixMs(aRaw), bR=autoDetectToUnixMs(bRaw);
+  if(!aR||!bR){ res.innerHTML='<span style="color:var(--status-partial)">Could not parse one or both timestamps.</span>'; return; }
+  var diff=Math.abs(bR.ms-aR.ms);
+  var earlier=aR.ms<=bR.ms?'A':'B';
+  var days=Math.floor(diff/86400000);
+  var hours=Math.floor((diff%86400000)/3600000);
+  var mins=Math.floor((diff%3600000)/60000);
+  var secs=Math.floor((diff%60000)/1000);
+  res.innerHTML='<span class="big">'+days+'d '+hours+'h '+mins+'m '+secs+'s</span> elapsed<br>'
+    +'Total: '+Math.floor(diff/1000)+' seconds &middot; '+diff+' ms<br>'
+    +'Timestamp '+earlier+' is earlier.<br>'
+    +'<span style="color:var(--muted);font-size:11px">A detected as: '+aR.format+' &middot; B detected as: '+bR.format+'</span>';
+}
+
+/* \u2500\u2500 Keyboard shortcuts \u2500\u2500 */
+function focusPrimaryInput(){
+  var activeTab=document.querySelector('.view-tab.active');
+  var view=activeTab?activeTab.dataset.view:'single';
+  var idMap={single:'unixMs', direct:'directInput', batch:'batchInput', duration:'durA'};
+  var el=document.getElementById(idMap[view]);
+  if(el){ el.focus(); if(el.select) el.select(); }
+}
+document.addEventListener('keydown', function(e){
+  var tag=(document.activeElement && document.activeElement.tagName) || '';
+  var typing=tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';
+  if(e.key==='Escape'){ if(typing) document.activeElement.blur(); return; }
+  if(typing) return;
+  if(e.key==='/'){ e.preventDefault(); focusPrimaryInput(); return; }
+  if(e.key==='n'||e.key==='N'){ setNow(); return; }
+  var viewMap={'1':'single','2':'direct','3':'batch','4':'duration'};
+  if(viewMap[e.key]){ setView(viewMap[e.key]); }
+});
+
+/* \u2500\u2500 Init \u2500\u2500 */
+(function(){
+  var params=new URLSearchParams(location.search);
+  var tParam=params.get('t');
+  if(tParam!==null && tParam!=='' && !isNaN(Number(tParam))){
+    syncFromUnixMs(Number(tParam), null);
+  } else {
+    setNow();
+  }
+  renderHistory();
+})();
+
+(function(){
+  var pill=document.getElementById('xv-nav-pill'),
+      links=document.querySelector('.nav-links'),
+      toggle=document.querySelector('.theme-toggle'),
+      G=20;
+  function check(){
+    if(!links)return;
+    document.body.classList.remove('nav-compact');
+    links.style.visibility='hidden';
+    var lr=links.getBoundingClientRect(),
+        pr=pill?pill.getBoundingClientRect().right:60,
+        tl=toggle?toggle.getBoundingClientRect().left:window.innerWidth-60;
+    links.style.visibility='';
+    document.body.classList.toggle('nav-compact',(pr+G>lr.left)||(lr.right+G>tl));
+  }
+  check();
+  window.addEventListener('resize',check);
+})();
+</script>
+</body>
+</html>
